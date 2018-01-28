@@ -1,0 +1,65 @@
+import gensim, logging, os
+
+issanitytest = False #flag to test the validity of a created model
+
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+model_dir = '/Users/hayden/workspace/EmotViz/vocabularies/word2vec/'
+words_of_interest = ['interest', 'anticipation', 'vigilance',
+                             'optimism',
+                             'serenity', 'joy', 'ecstasy',
+                             'acceptance', 'trust', 'admiration',
+                             'submission',
+                             'apprehension', 'fear', 'terror',
+                             'awe',
+                             'distraction', 'surprise', 'amazement',
+                             'disapproval',
+                             'pensive', 'sadness', 'grief',
+                             'remorse',
+                             'boredom', 'disgust', 'loathing',
+                             'contempt',
+                             'annoyance', 'anger', 'rage',
+                             'aggressiveness']
+# sentences = [['first', 'sentence'], ['second', 'sentence']]
+# # train word2vec on the two sentences
+# model = gensim.models.Word2Vec(sentences, min_count=1)
+#
+# model.save('/tmp/mymodel')
+# new_model = gensim.models.Word2Vec.load('/tmp/mymodel')
+
+def look_up(words_of_interest): #todo if some word of interest does not appear in a model, break gracefully
+    wv_interest = {}
+    for i in range(len(words_of_interest)-1):
+        wv_interest[words_of_interest[i]] = model[words_of_interest]
+    return wv_interest
+
+
+
+
+isloopresults = False
+for filename in os.listdir(model_dir): #get results for each of the models I have
+    if filename.endswith('.txt'):
+        this_model_file = os.path.join(model_dir, filename)
+        model = gensim.models.KeyedVectors.load_word2vec_format(
+            this_model_file, binary=False)
+        print(model.similarity('woman', 'man'))
+        wv_interesting = look_up(words_of_interest)
+        print(wv_interesting['pensive'])
+
+        if (not isloopresults):
+            print('Not looping through all models I have! ')
+            break
+
+
+
+
+
+
+#model = gensim.models.KeyedVectors.load_word2vec_format('/Users/hayden/workspace/word2vec/word2vec-mac/vectors.bin', binary=True)
+
+
+
+
+#extract vectors for the words
+#wv_interest = model['office']
+#populate word vectors of interest
+
