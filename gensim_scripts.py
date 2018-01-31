@@ -1,7 +1,7 @@
 import gensim, logging, os
 
 isconverting = False #flag for doing some converting work
-ismodeling = False#flag for building models. WARNING: does not check if models already exist
+ismodeling = True#flag for building models. WARNING: does not check if models already exist
 istestingmodels = True
 
 
@@ -15,7 +15,7 @@ if(ismodeling): #gave up on the idea of saving and reusing models, pickling c li
         model = gensim.models.KeyedVectors.load_word2vec_format(
             vocab_file,
             binary=False)
-        model.save(model_file_name)
+        model.save_word2vec_format(model_file_name)
         print(model_file_name)
 
 
