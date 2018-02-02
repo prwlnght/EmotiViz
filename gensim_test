@@ -2,48 +2,53 @@ import gensim, logging, os
 import nltk
 import numpy as np
 import csv
+from matplotlib.mlab import PCA as mlabPCA
 
-#FLAGS
-isSanityTest = False #flag to test the validity of a created model
-isLoopResults = False #get results for all models available
+from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d import proj3d
+
+# FLAGS
+isSanityTest = False  # flag to test the validity of a created model
+isLoopResults = True  # get results for all models available
 isCreateSimilarityGraph = True
 isCreateModels = False
 isReadModelsFromDisk = False
 isWriteWordsOfInterest = True
 is_use_woi_files = True
+isFoldedGraph = True
 
-
-#Global Variables
+# Global Variables
 model = None
 model_dir = '/Users/hayden/workspace/EmotViz/vocabularies/word2vec/'
 words_of_interest_files_folder = '/Users/hayden/workspace/EmotViz/words_of_interst_by_models/'
+current_model_name = ''
 words_of_interest = ['interest', 'anticipation', 'vigilance',
-                             'optimism',
-                             'serenity', 'joy', 'ecstasy',
-                             'acceptance', 'trust', 'admiration',
-                             'submission',
-                             'apprehension', 'fear', 'terror',
-                             'awe',
-                             'distraction', 'surprise', 'amazement',
-                             'disapproval',
-                             'pensive', 'sadness', 'grief',
-                             'remorse',
-                             'boredom', 'disgust', 'loathing',
-                             'contempt',
-                             'annoyance', 'anger', 'rage',
-                             'aggressiveness']
+                     'optimism',
+                     'serenity', 'joy', 'ecstasy',
+                     'love',
+                     'acceptance', 'trust', 'admiration',
+                     'submission',
+                     'apprehension', 'fear', 'terror',
+                     'awe',
+                     'distraction', 'surprise', 'amazement',
+                     'disapproval',
+                     'pensive', 'sadness', 'grief',
+                     'remorse',
+                     'boredom', 'disgust', 'loathing',
+                     'contempt',
+                     'annoyance', 'anger', 'rage',
+                     'aggressiveness']
+
+folded_petals = [words_of_interest[x] for x in range(len(words_of_interest)) if (x+1) % 4 == 0]
 
 
-def write_dict_to_file(this_dict, modelname, write_directory = words_of_interest_files_folder):
-    filename = modelname + '.npy'
-    this_file = os.path.join(write_directory, modelname)
+def write_dict_to_file(this_dict, model_name, write_directory=words_of_interest_files_folder):
+    filename = model_name + '.npy'
+    this_file = os.path.join(write_directory, filename)
     np.save(this_file, this_dict)
 
-    #to read the data back:
-
-
-
-
+    # to read the data back:
 
 
 # sentences = [['first', 'sentence'], ['second', 'sentence']]
@@ -53,137 +58,274 @@ def write_dict_to_file(this_dict, modelname, write_directory = words_of_interest
 # model.save('/tmp/mymodel')
 # new_model = gensim.models.Word2Vec.load('/tmp/mymodel')
 
-def look_up(words_of_interest, model): #todo if some word of interest does not appear in a model, break gracefully
+def look_up(words_of_interest, model):  # todo if some word of interest does not appear in a model, break gracefully
     if (model == None):
         print('Error, there is no model loaded')
         exit()
     wv_interest = {}
-    for i in range(len(words_of_interest)-1):
-        wv_interest[words_of_interest[i]] = model[words_of_interest]
-    if(isWriteWordsOfInterest):
-        write_dict_to_file(wv_interest, write_directory= words_of_interest_files_folder)
+    for i in range(len(words_of_interest)):
+        wv_interest[words_of_interest[i]] = model[words_of_interest[i]]
+    if (isWriteWordsOfInterest):
+        write_dict_to_file(wv_interest, current_model_name, write_directory=words_of_interest_files_folder)
     return wv_interest
 
-#create similarity graph
+
+def createSimilarityGraph3(dict, model_name = current_model_name):
+    """
+    accepts a dictionary with string keys for words and 1-D np array for word vectors
+    Visualizes a similarity graph in 3D
+
+    """
+    cmap = plt.get_cmap('viridis')
+
+    this_max_x = -9999
+    this_max_y = -9999
+    this_max_z = -9999
+    this_min_x = 9999
+    this_min_y = 9999
+    this_min_z = 9999
+
+    print('Now visualizing the words in 3D')
+    plt.clf()
+
+    all_samples = np.vstack([dict[x] for x in sorted(dict.keys())])
+    mlab_pca = mlabPCA(all_samples.T)
+
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    counter = 0
+    for key in sorted(dict.keys()):
+        #plt.text(mlab_pca.Y[counter, 0], mlab_pca.Y[counter, 1], key)
+
+        if 'aggressiveness' in key or 'remorse' in key or 'contempt' in key:
+
+            ax.text(mlab_pca.Y[counter, 0], mlab_pca.Y[counter, 1], mlab_pca.Y[counter, 2], key,
+                    color='red')
+            this_max_x = max(mlab_pca.Y[counter, 0], this_max_x)
+            this_max_y = max(mlab_pca.Y[counter, 1], this_max_y)
+            this_max_z = max(mlab_pca.Y[counter, 2], this_max_z)
+            this_min_x = min(mlab_pca.Y[counter, 0], this_min_x)
+            this_min_y = min(mlab_pca.Y[counter, 1], this_min_y)
+            this_min_z = min(mlab_pca.Y[counter, 1], this_min_z)
+
+        counter += 1
+
+
+    plt.title('Samples for class 1 and class 2')
+    ax.legend(loc='upper right')
+
+    ax.set_xlabel('x_values')
+    ax.set_ylabel('y_values')
+    ax.set_zlabel('z_values')
+    ax.set_xlim([this_min_x, this_max_x])
+    ax.set_ylim([this_min_y, this_max_y])
+    ax.set_zlim(this_min_z, this_max_z)
+    plt.title('Transformed samples with class labels from matplotlib.mlab.PCA()')
+    model_name = model_name + '_3.png'
+    plt.savefig(model_name)
+
+    #plt.show()
+
+# create similarity graph
 """
 Accepts a dictionary with string names and 1-D np.array values and creates a 2-d Similarity graph for it
 """
-def createSimilarityGraph(dict, viz_dims=2):
 
-    #if current model is none, error and break
-    #loop through all interesting words an get word vectors for each
-    this_wv_interest = look_up(words_of_interest, model)
 
+def createSimilarityGraph(dict, viz_dims=2, model_name=current_model_name):
+    # if current model is none, error and break
+    # loop through all interesting words an get word vectors for each
+    # this_wv_interest = look_up(words_of_interest, model)
+
+    this_max_x = -9999
+    this_max_y = -9999
+    this_min_x = 9999
+    this_min_y = 9999
     print('Now visualizing the words')
+    plt.clf()
+
+    # iterate through the dict and create the needed samples
+
+    # plot based on only the first 20 vectors
+
+    # allArrays = np.concatenate([dict[x]] for x in dict.keys())
+
+    # class1_sample = dict['first one']
+    # class2_sample = dict['second one']
+
+    # all_samples = np.concatenate((class1_sample, class2_sample), axis=1)
+
+    all_samples = np.vstack([dict[x] for x in sorted(dict.keys())])
+    np.random.seed(22342)  # setting the random seed for consistancy across tests
+
+    mlab_pca = mlabPCA(all_samples.T)
+
+    print('PC axes in terms of the measurement axes scaled by the standard deviations:\n', mlab_pca.Wt)
+
+    counter = 0
+    for key in sorted(dict.keys()):
+        plt.text(mlab_pca.Y[counter, 0], mlab_pca.Y[counter, 1], key)
+        this_max_x = max(mlab_pca.Y[counter, 0], this_max_x)
+        this_min_x = min(mlab_pca.Y[counter, 0], this_min_x)
+        this_max_y = max(mlab_pca.Y[counter, 1], this_max_y)
+        this_min_y = min(mlab_pca.Y[counter, 1], this_min_y)
+
+        counter += 1
+
+    # plt.plot(mlab_pca.Y[0:20, 0], mlab_pca.Y[0:20, 1], 'o', markersize=7, color='blue', alpha=0.5, label='class1')
+    # plt.plot(mlab_pca.Y[20:40, 0], mlab_pca.Y[20:40, 1], '^', markersize=7, color='red', alpha=0.5, label='class2')
+
+    plt.xlabel('x_values')
+    plt.ylabel('y_values')
+    plt.xlim([this_min_x, this_max_x])
+    plt.ylim([this_min_y, this_max_y])
+    plt.legend()
+    plt.title('Transformed samples with class labels from matplotlib.mlab.PCA()')
+    model_name = model_name + '.png'
+    plt.savefig(model_name)
+    return plt
 
 
-    np.random.seed(22342) #setting the random seed for consistancy across tests
-
-
-
-    raise NotImplementedError
+60
 
 
 def make_models():
-    for filename in os.listdir(model_dir): #get results for each of the models I have
+    global current_model_name
+    for filename in os.listdir(model_dir):  # get results for each of the models I have
         if filename.endswith('.txt'):
+            current_model_name = os.path.splitext(filename)[0]
             this_model_file = os.path.join(model_dir, filename)
             model = gensim.models.KeyedVectors.load_word2vec_format(
                 this_model_file, binary=False)
-            print(model.similarity('woman', 'man'))
-            #wv_interesting = look_up(words_of_interest)
-            #print(wv_interesting['pensive'])
 
-            #for each of the above words find the word that is most similar to in our list
+            print(model.similarity('woman', 'man'))
+            wv_interesting = look_up(words_of_interest, model)
+            # write_dict_to_file(wv_interesting, 'testfile', write_directory=words_of_interest_files_folder)
+
+            # print(wv_interesting['pensive'])
+
+            # for each of the above words find the word that is most similar to in our list
             for this_word in words_of_interest:
-                #create a list of words exlucding the words
+                # create a list of words exlucding the words
                 temp_list = [word for word in words_of_interest if word is not this_word]
                 this_similar_word = model.most_similar_to_given(this_word, temp_list)
                 print(this_word + ' was most similar to', this_similar_word)
 
-            #do a 2-D projection of the word vectors for all words and map them
+            # do a 2-D projection of the word vectors for all words and map them
 
-            #go into genism and see how model.most_similar(positive=['koenig', 'frau'], negative=['mann']) etc. is impl
+            # go into genism and see how model.most_similar(positive=['koenig', 'frau'], negative=['mann']) etc. is impl
 
-
-
-            #translate that into findings from my interesting list (or i can use the most interesting list as list sim
+            # translate that into findings from my interesting list (or i can use the most interesting list as list sim
             if (not isLoopResults):
                 print('Not looping through all models I have! ')
                 print('Model created using: ' + filename)
                 break
 
 
-def test_write2Dic():
+def test_write2Dic(new_dict):
+    # #creating two nd arrays
+    # mu_vec1 = np.array([0, 0, 0])
+    # cov_mat1 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    # class1_sample = np.random.multivariate_normal(mu_vec1, cov_mat1, 20).T
+    # assert class1_sample.shape == (3, 20), "The matrix has not the dimensions 3x20"
+    #
+    # mu_vec2 = np.array([1, 1, 1])
+    # cov_mat2 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    # class2_sample = np.random.multivariate_normal(mu_vec2, cov_mat2, 20).T
+    # assert class2_sample.shape == (3, 20), "The matrix has not the dimensions 3x20"
+    #
+    # new_dict = {}
+    # new_dict['first one'] = class1_sample
+    # new_dict['second one'] = class2_sample
+    write_dict_to_file(new_dict, 'testfile', write_directory=words_of_interest_files_folder)
 
-    #creating two nd arrays
-    mu_vec1 = np.array([0, 0, 0])
-    cov_mat1 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-    class1_sample = np.random.multivariate_normal(mu_vec1, cov_mat1, 20).T
-    assert class1_sample.shape == (3, 20), "The matrix has not the dimensions 3x20"
+    # this_file = os.path.join(words_of_interest_files_folder, 'testfile')
+    # this_file = this_file + '.npy'
+    #
+    # dict_back = np.load(this_file)
+    # print(dict_back.item().keys())
+    # print(dict_back.item()['first one'])
 
-    mu_vec2 = np.array([1, 1, 1])
-    cov_mat2 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-    class2_sample = np.random.multivariate_normal(mu_vec2, cov_mat2, 20).T
-    assert class2_sample.shape == (3, 20), "The matrix has not the dimensions 3x20"
 
-    new_dict = {}
-    new_dict['first one'] = class1_sample
-    new_dict['second one'] = class2_sample
-    write_dict_to_file(new_dict, 'testfile', write_directory= words_of_interest_files_folder)
+def createFoldedSimilarityGraph(this_words_of_interest, model_name):
+    additions_included = {}
+    for original_word in folded_petals:
+        additions_included[original_word] = this_words_of_interest[original_word]
+    counter = 0
+    for folded_word in folded_petals:
+        if counter == len(folded_petals) - 1:  # last iteration
+            temp_sum = np.sum([
+                this_words_of_interest[words_of_interest[0 + counter * 3]],
+                this_words_of_interest[words_of_interest[1 + counter * 3]],
+                this_words_of_interest[words_of_interest[2 + counter * 3]],
+                this_words_of_interest[words_of_interest[0]],
+                this_words_of_interest[words_of_interest[1]],
+                this_words_of_interest[words_of_interest[2]]
+            ], axis=0)
+            additions_included[folded_word + '2'] = temp_sum / 6
+        else:
+            temp_sum = np.sum([
+                this_words_of_interest[words_of_interest[0 + counter * 3]],
+                this_words_of_interest[words_of_interest[1 + counter * 3]],
+                this_words_of_interest[words_of_interest[2 + counter * 3]],
+                this_words_of_interest[words_of_interest[4 + counter * 3]],
+                this_words_of_interest[words_of_interest[5 + counter * 3]],
+                this_words_of_interest[words_of_interest[6 + counter * 3]]
+            ], axis=0)
+            additions_included[folded_word + '2'] = temp_sum / 6
+        counter += 1
+    createSimilarityGraph(additions_included, model_name=model_name)
+    createSimilarityGraph3(additions_included, model_name=model_name+'3D')
 
-    this_file = os.path.join(words_of_interest_files_folder, 'testfile')
-    this_file = this_file + '.npy'
-
-    dict_back = np.load(this_file)
-    print(dict_back.item().keys())
-    print(dict_back.item()['first one'])
 
 def main():
-    #flow begin
+    # flow begin
 
-    #test_write2Dic()
+    # test_write2Dic()
 
-    #test readin
-    #exit()
-
-
+    # test readin
+    # exit()
 
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-    if(isCreateModels):
+    if isCreateModels:
         make_models()
-
 
     if isCreateSimilarityGraph:
         if is_use_woi_files:
             # read words of interest projections from files
             for this_file in os.listdir(words_of_interest_files_folder):
                 # read each file and parse into a dict
+                current_model_name = os.path.splitext(this_file)[0]
                 this_file = os.path.join(words_of_interest_files_folder, this_file)
                 if this_file.endswith('.npy'):
                     this_words_of_interest = np.load(this_file).item()
-                    createSimilarityGraph(this_words_of_interest)
-                    break
+                    createSimilarityGraph(this_words_of_interest, model_name=current_model_name)
+                    createSimilarityGraph3(this_words_of_interest, model_name=current_model_name)
         else:
             if model != None:
-                this_words_of_interest = words_of_interest(model)#read from the model
+                this_words_of_interest = words_of_interest(model)  # read from the model
                 createSimilarityGraph(this_words_of_interest)
 
+
+
+    if isFoldedGraph:
+        # using woi_files by default
+        for this_file in os.listdir(words_of_interest_files_folder):
+            # read each file and parse into a dict
+            current_model_name = os.path.splitext(this_file)[0] + '.folded'
+            this_file = os.path.join(words_of_interest_files_folder, this_file)
+            if this_file.endswith('.npy'):
+                this_words_of_interest = np.load(this_file).item()
+                createFoldedSimilarityGraph(this_words_of_interest, model_name=current_model_name)
 
 
 if __name__ == "__main__":
     main()
 
+# model = gensim.models.KeyedVectors.load_word2vec_format('/Users/hayden/workspace/word2vec/word2vec-mac/vectors.bin', binary=True)
 
 
-
-
-#model = gensim.models.KeyedVectors.load_word2vec_format('/Users/hayden/workspace/word2vec/word2vec-mac/vectors.bin', binary=True)
-
-
-
-
-#extract vectors for the words
-#wv_interest = model['office']
-#populate word vectors of interest
-
+# extract vectors for the words
+# wv_interest = model['office']
+# populate word vectors of interest

@@ -1,8 +1,8 @@
 import gensim, logging, os
 
-isconverting = False #flag for doing some converting work
-ismodeling = True#flag for building models. WARNING: does not check if models already exist
-istestingmodels = True
+isconverting = True #flag for doing some converting work
+ismodeling = False#flag for building models. WARNING: does not check if models already exist
+istestingmodels = False
 
 
 if(ismodeling): #gave up on the idea of saving and reusing models, pickling c like models doens't seem to work
