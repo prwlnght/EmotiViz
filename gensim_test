@@ -13,10 +13,10 @@ isSanityTest = False  # flag to test the validity of a created model
 isLoopResults = True  # get results for all models available
 isCreateSimilarityGraph = True
 isCreateModels = False
-isReadModelsFromDisk = False
-isWriteWordsOfInterest = True
+isReadModelsFromDisk = True
+isWriteWordsOfInterest = False
 is_use_woi_files = True
-isFoldedGraph = True
+isFoldedGraph = False
 
 # Global Variables
 model = None
@@ -38,7 +38,23 @@ words_of_interest = ['interest', 'anticipation', 'vigilance',
                      'boredom', 'disgust', 'loathing',
                      'contempt',
                      'annoyance', 'anger', 'rage',
-                     'aggressiveness']
+                     'aggressiveness',
+                     'one', 'two', 'three', 'four', 'nine', 'hundred', 'billion',
+                     'man', 'woman', 'sister', 'husband', 'wife', 'male', 'female',
+                     'monday', 'tuesday', 'saturday', 'wednesday',
+                     'germany', 'india', 'nepal', 'austria',
+                     'berlin', 'mumbai', 'delhi', 'kathmandu',
+                     'captain', 'pilot', 'driver',
+                     'car', 'automobile', 'ship', 'airplane',
+                     'Asia', 'Africa', 'Europe'
+                     ]
+
+words_to_plot = ['love', 'sadness', 'anger', 'fear', 'terror',
+                 'husband', 'male',
+                 'car',
+                 'india', 'nepal',
+                 'tuesday', 'wednesday', 'monday', 'admiration',
+                 'one', 'four']
 
 folded_petals = [words_of_interest[x] for x in range(len(words_of_interest)) if (x+1) % 4 == 0]
 
@@ -98,10 +114,9 @@ def createSimilarityGraph3(dict, model_name = current_model_name):
     for key in sorted(dict.keys()):
         #plt.text(mlab_pca.Y[counter, 0], mlab_pca.Y[counter, 1], key)
 
-        if 'aggressiveness' in key or 'remorse' in key or 'contempt' in key:
-
+        if key in words_to_plot:
             ax.text(mlab_pca.Y[counter, 0], mlab_pca.Y[counter, 1], mlab_pca.Y[counter, 2], key,
-                    color='red')
+                    color=plt.cm.get_cmap('hsv', len(words_of_interest))(counter))
             this_max_x = max(mlab_pca.Y[counter, 0], this_max_x)
             this_max_y = max(mlab_pca.Y[counter, 1], this_max_y)
             this_max_z = max(mlab_pca.Y[counter, 2], this_max_z)
@@ -120,8 +135,8 @@ def createSimilarityGraph3(dict, model_name = current_model_name):
     ax.set_zlabel('z_values')
     ax.set_xlim([this_min_x, this_max_x])
     ax.set_ylim([this_min_y, this_max_y])
-    ax.set_zlim(this_min_z, this_max_z)
-    plt.title('Transformed samples with class labels from matplotlib.mlab.PCA()')
+    ax.set_zlim([this_min_z, this_max_z])
+    plt.title('Visualizing Emotions')
     model_name = model_name + '_3.png'
     plt.savefig(model_name)
 
@@ -165,11 +180,12 @@ def createSimilarityGraph(dict, viz_dims=2, model_name=current_model_name):
 
     counter = 0
     for key in sorted(dict.keys()):
-        plt.text(mlab_pca.Y[counter, 0], mlab_pca.Y[counter, 1], key)
-        this_max_x = max(mlab_pca.Y[counter, 0], this_max_x)
-        this_min_x = min(mlab_pca.Y[counter, 0], this_min_x)
-        this_max_y = max(mlab_pca.Y[counter, 1], this_max_y)
-        this_min_y = min(mlab_pca.Y[counter, 1], this_min_y)
+        if key in words_to_plot:
+            plt.text(mlab_pca.Y[counter, 0], mlab_pca.Y[counter, 1], key)
+            this_max_x = max(mlab_pca.Y[counter, 0], this_max_x)
+            this_min_x = min(mlab_pca.Y[counter, 0], this_min_x)
+            this_max_y = max(mlab_pca.Y[counter, 1], this_max_y)
+            this_min_y = min(mlab_pca.Y[counter, 1], this_min_y)
 
         counter += 1
 
